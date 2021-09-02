@@ -2,10 +2,9 @@
 
 // Require the necessary discord.js classes
 const { Client, Intents } = require('discord.js');
-const {token , prefix} = require('./config.json');
+const { token , guildId } = require('./config.json');
+var { joinVoiceChannel } = require('@discordjs/voice');
 const DisTube = require('distube');
-
-
 
 // Create a new client instance
 var client = new Client({
@@ -34,21 +33,72 @@ client.once('ready', () => {
 	console.log('Ready!');
 });
 
-client.on('messageCreate', (msg) => {
-    if(msg.author.bot || !msg.content.startsWith(prefix)) return;
+var connection = null;
+var msgObject;
 
-    const args = msg.content.slice(prefix.length).trim().split(' ');
-    const command = args.shift().toLowerCase();
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand()) return;
+    const { commandName } = interaction;
+    if (commandName === "wakeup") {
+        // join voice channel
+        await interaction.reply("Yo!");
+        const gld = client.guilds.cache.get(guildId);
+        const member = gld.members.cache.get(interaction.user.id);
+        var channel = member.voice.channel;
 
-    console.log(msg.content);
-    
-    if (command === 'ping') {
-        msg.channel.send('Pong!');
+        if (channel) {
+            connection = joinVoiceChannel({
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                adapterCreator: channel.guild.voiceAdapterCreator
+            });
+        } else {
+            await interaction.followUp('No voice channel joined!');
+        }
+    } else if (commandName === 'sleep') {
+        // kick bot
+        if (connection) {
+            connection.destroy();
+            await interaction.reply('Bye!');
+        }
+        else {
+            await interaction.reply('Already asleep! zz...');
+        }
+        connection = null;
+    } else if (commandName === 'play') {
+        // play song
+        const songName = interaction.options.getString('song_name');
+        await interaction.reply(`Searching for: ${songName}`);
+        try {
+            distube.play(msgObject, songName);
+        } catch (err) {
+            console.error('Error catched!');
+        }
+    } else if (commandName === 'pause') {
+        // pause song
+        try {
+            distube.pause(msgObject);
+            await interaction.reply('Song paused');
+        } catch (err) {
+            await interaction.reply('Song already paused');
+            console.error('Error catched!');
+        }
+    } else if (commandName === 'resume') {
+        // resumes the paused song
+        try {
+            distube.resume(msgObject);
+            await interaction.reply('Song resumed');
+        } catch (err) {
+            await interaction.reply('Song already playing');
+            console.error('Error catched!');
+        }
     }
-    else if (command === 'p') {
-        distube.play(msg, args.join(' '));
-    }
-    // client.channels.cache.get(msg.channelId).send('hello');
 });
+
+//jugaad to use distube with slash commands
+client.once('messageCreate', msg => {
+    msgObject = msg;
+});
+
 // Login to Discord with your client's token
 client.login(token);
