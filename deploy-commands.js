@@ -12,6 +12,11 @@ const commands = [
         .addStringOption(option => option.setName("song_name").setDescription("Song to play").setRequired(true)),
 	new SlashCommandBuilder().setName('pause').setDescription('Pauses the current song'),
 	new SlashCommandBuilder().setName('resume').setDescription('Resumes the current song'),
+	new SlashCommandBuilder().setName('shuffle').setDescription('Shuffle the current Playlist'),
+	new SlashCommandBuilder().setName('repeat').setDescription('Repeats the current song/queue 0: disabled, 1: Repeat a song, 2: Repeat all the queue')
+		.addStringOption(option => option.setName("repeat_mode").setDescription('0: disabled, 1: Repeat a song, 2: Repeat all the queue').setRequired(true)),
+	new SlashCommandBuilder().setName('skip').setDescription('Skips the current song'),
+	new SlashCommandBuilder().setName('stop').setDescription('Stop playing songs')
 ]
 .map(command => command.toJSON());
 
