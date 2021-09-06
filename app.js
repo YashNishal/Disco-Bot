@@ -3,7 +3,6 @@
 // Require the necessary discord.js classes
 const { Client, Intents } = require('discord.js');
 const { token , guildId } = require('./config.json');
-var { joinVoiceChannel } = require('@discordjs/voice');
 const DisTube = require('distube');
 // Create a new client instance
 var client = new Client({
@@ -48,7 +47,7 @@ distube.on('searchNoResult', msg => {
     msg.channel.send('No results!');
 }).on('error', (text, err) => {
     console.error('Distube error', err);
-}).on('NO_UP_NEXT', (err) => {
+}).on('empty', (err) => {
     console.error('Empty error', err);
 });
 
@@ -62,16 +61,6 @@ client.on('interactionCreate', async (interaction) => {
         const gld = client.guilds.cache.get(guildId);
         const member = gld.members.cache.get(interaction.user.id);
         var channel = member.voice.channel;
-
-        // if (channel) {
-        //     connection = joinVoiceChannel({
-        //         channelId: channel.id,
-        //         guildId: channel.guild.id,
-        //         adapterCreator: channel.guild.voiceAdapterCreator
-        //     });
-        // } else {
-        //     await interaction.followUp('No voice channel joined!');
-        // }
 
         try {
             distube.voices.join(channel);
@@ -95,7 +84,6 @@ client.on('interactionCreate', async (interaction) => {
             } catch (err) {
                 console.error('Error catched! - stop', err);
             }
-            joined = false;
     
         } else if (commandName === 'play') {
             // play song
@@ -130,10 +118,14 @@ client.on('interactionCreate', async (interaction) => {
         } else if( commandName === 'skip') {
             // skips the song
             try {
-                distube.skip(msgObject);
-                // await interaction.reply('Song skipped!');
+                let flag = true; //becomes false if distube skip catches error
+                await distube.skip(msgObject).catch(async (err) => {
+                    await interaction.reply('Nothing to skip.');
+                    console.error('Error catched! : skip - ' + err);
+                    flag = false;
+                });
+                if(flag) await interaction.reply('Song skipped!');
             } catch(err) {
-                await interaction.reply('Nothing to skip.');
                 console.error('Error catched! : skip - ' + err);
             }
         
